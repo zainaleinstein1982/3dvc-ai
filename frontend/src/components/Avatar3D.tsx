@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Mesh, PlaneGeometry, MeshBasicMaterial, VideoTexture, DoubleSide } from 'three';
 
@@ -15,14 +15,19 @@ interface Avatar3DProps {
 const Avatar3D = forwardRef<Avatar3DHandle, Avatar3DProps>((props, ref) => {
   const groupRef = useRef<Group>(null);
   const trackingDataRef = useRef<any>(null);
+  const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
 
-  // Ambil elemen video lokal dari DOM
-  const videoElement = typeof document !== 'undefined' ? (document.querySelector('video') as HTMLVideoElement) : null;
-  const videoTexture = useMemo(() => videoElement ? new VideoTexture(videoElement) : null, [videoElement]);
+  useEffect(() => {
+    // Mencari elemen video lokal dengan aman setelah komponen ter-mount di browser
+    const videoElement = document.querySelector('video') as HTMLVideoElement;
+    if (videoElement) {
+      const texture = new VideoTexture(videoElement);
+      setVideoTexture(texture);
+    }
+  }, []);
 
   const geometry = useMemo(() => new PlaneGeometry(3, 3), []);
   
-  // Menggunakan MeshBasicMaterial agar video tampil terang natural tanpa butuh pencahayaan lampu 3D
   const material = useMemo(() => new MeshBasicMaterial({ 
     map: videoTexture || undefined, 
     color: videoTexture ? 0xffffff : props.color,
