@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from livekit.api import WebhookReceiver
+from livekit.api import WebhookReceiver, TokenVerifier
 import os
 from app.db.database import AsyncSessionLocal
 from app.db import models
@@ -7,7 +7,12 @@ from sqlalchemy import update
 import uuid
 
 router = APIRouter()
-receiver = WebhookReceiver(os.getenv("LIVEKIT_API_KEY", "devkey"), os.getenv("LIVEKIT_API_SECRET", "secret"))
+
+key_provider = TokenVerifier(
+    os.getenv("LIVEKIT_API_KEY", "devkey"),
+    os.getenv("LIVEKIT_API_SECRET", "secret")
+)
+receiver = WebhookReceiver(key_provider)
 
 @router.post("/sfu/webhook")
 async def livekit_webhook(request: Request):
