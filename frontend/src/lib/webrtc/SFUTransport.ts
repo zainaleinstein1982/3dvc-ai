@@ -17,13 +17,15 @@ export class SFUTransport {
     this.room.on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => this.onParticipantJoined(p.identity));
     this.room.on(RoomEvent.ParticipantDisconnected, (p: RemoteParticipant) => this.onParticipantLeft(p.identity));
     this.room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-      if (track.kind === Track.Kind.Audio) {
+      if (track.kind === Track.Kind.Audio && participant?.identity) {
         const stream = new MediaStream([track.mediaStreamTrack]);
         this.onRemoteStream(participant.identity, stream);
       }
     });
     this.room.on(RoomEvent.DataReceived, (payload, participant) => {
-      this.onRemoteTrackingData(participant.identity, JSON.parse(new TextDecoder().decode(payload)));
+      if (participant?.identity) {
+        this.onRemoteTrackingData(participant.identity, JSON.parse(new TextDecoder().decode(payload)));
+      }
     });
   }
 
