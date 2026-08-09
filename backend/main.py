@@ -16,10 +16,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://3dvc.ai"],
+    allow_origins=["*"],  # Mengizinkan seluruh domain (termasuk Railway & Localhost)
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    allow_methods=["*"],  # Mengizinkan seluruh HTTP Method (GET, POST, OPTIONS, dsb)
+    allow_headers=["*"],  # Mengizinkan seluruh Header
 )
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
