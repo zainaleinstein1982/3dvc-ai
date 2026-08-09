@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root {
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
+}
+html, body { background: hsl(var(--background)); color: hsl(var(--foreground)); }

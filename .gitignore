@@ -1,0 +1,51 @@
+# ==== Environment & Secrets ====
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ==== Python ====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ==== Node / Next.js ====
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==== Docker ====
+*.pid
+
+# ==== Database / Backups ====
+backups/
+*.sql
+*.sql.gz
+
+# ==== OS / Editor ====
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# ==== Logs ====
+*.log
+logs/

@@ -1,0 +1,14 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+sqlalchemy[asyncio]==2.0.31
+asyncpg==0.29.0
+passlib[bcrypt]==1.7.4
+pyjwt==2.9.0
+slowapi==0.1.9
+redis==5.0.7
+minio==7.2.7
+livekit-api==0.7.0
+openai==1.35.7
+alembic==1.13.2
+pydantic-settings==2.4.0
+python-dotenv==1.0.1
