@@ -30,12 +30,29 @@ export class SFUTransport {
   }
 
   async connect(roomId: string, userId: string) {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://3dvc-ai-production.up.railway.app';
+    const API_URL = 'https://3dvc-ai-production.up.railway.app';
+    
+    // Cek beberapa kemungkinan key token di localStorage agar tidak null
+    const tokenStr = localStorage.getItem('token') || 
+                     localStorage.getItem('access_token') || 
+                     localStorage.getItem('authToken') || '';
+
     const res = await fetch(`${API_URL}/api/sfu/token?room=${roomId}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: { 
+        'Authorization': `Bearer ${tokenStr}` 
+      }
     });
-    const { token, url } = await res.json();
-    await this.room.connect(url, token);
+
+    if (!res.ok) {
+      throw new Error(`Gagal mengambil token SFU: Status ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (!data || !data.token || !data.url) {
+      throw new Error('Format token SFU dari backend tidak valid');
+    }
+
+    await this.room.connect(data.url, data.token);
     this.localId = this.room.localParticipant.identity;
     this.room.remoteParticipants.forEach(p => this.onParticipantJoined(p.identity));
   }
