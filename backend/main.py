@@ -16,10 +16,13 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Mengizinkan seluruh domain (termasuk Railway & Localhost)
+    allow_origins=[
+        "https://independent-perfection-production.up.railway.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],  # Mengizinkan seluruh HTTP Method (GET, POST, OPTIONS, dsb)
-    allow_headers=["*"],  # Mengizinkan seluruh Header
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
