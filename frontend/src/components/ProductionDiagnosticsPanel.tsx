@@ -7,7 +7,8 @@ export default function ProductionDiagnosticsPanel({ token }: { token: string })
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/health/admin-diagnostics', {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://3dvc-ai-production.up.railway.app';
+        const res = await fetch(`${API_URL}/api/health/admin-diagnostics`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) setHealth(await res.json());
