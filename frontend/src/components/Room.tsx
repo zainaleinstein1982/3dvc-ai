@@ -4,7 +4,6 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Avatar3D from './Avatar3D';
 import LoginScreen from './LoginScreen';
-import ProductionDiagnosticsPanel from './ProductionDiagnosticsPanel';
 import { SFUTransport } from '@/lib/webrtc/SFUTransport';
 import { ActiveSpeakerManager } from '@/lib/rendering/ActiveSpeakerManager';
 import { TrackingScheduler } from '@/lib/tracking/TrackingScheduler';
@@ -22,7 +21,6 @@ export default function Room() {
   const trackingWorker = useRef<Worker | null>(null);
   const sequenceNumber = useRef(0);
 
-  // Dapatkan ID pengguna yang aman dari objek currentUser
   const userId = currentUser?.id || currentUser?.email || 'guest_user';
 
   useEffect(() => {
@@ -30,7 +28,6 @@ export default function Room() {
     
     const init = async () => {
       try {
-        // Setup WebRTC dengan ID yang aman
         transport.current = new SFUTransport();
         await transport.current.connect('demo-room', userId);
         
@@ -42,10 +39,8 @@ export default function Room() {
           setParticipants(prev => new Map(prev).set(id, { id, isActive: false }));
         };
 
-        // Setup Active Speaker
         activeSpeakerManager.current = new ActiveSpeakerManager(setActiveSpeakerId);
 
-        // Setup Tracking Worker dengan penanganan error yang aman
         if (typeof Worker !== 'undefined') {
           try {
             trackingWorker.current = new Worker(new URL('../workers/TrackingWorker.ts', import.meta.url));
@@ -69,19 +64,18 @@ export default function Room() {
             };
             trackingWorker.current.postMessage({ type: 'init' });
           } catch (workerErr) {
-            console.warn('Tracking worker skipped or failed to load:', workerErr);
+            console.warn('Tracking worker skipped:', workerErr);
           }
         }
 
-        // Get local media (Kamera & Mikrofon)
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           if (localVideoRef.current) localVideoRef.current.srcObject = stream;
         } catch (mediaErr) {
-          console.warn('Media devices not fully accessible:', mediaErr);
+          console.warn('Media devices error:', mediaErr);
         }
       } catch (err) {
-        console.error('Room initialization error:', err);
+        console.error('Room init error:', err);
       }
     };
 
@@ -95,7 +89,6 @@ export default function Room() {
   }, [authToken, currentUser, userId]);
 
   useEffect(() => {
-    // Adaptive FPS based on active speaker
     const isActive = activeSpeakerId === userId;
     trackingScheduler.current?.setActive(isActive);
   }, [activeSpeakerId, userId]);
@@ -106,7 +99,6 @@ export default function Room() {
 
   return (
     <div className="flex flex-col h-screen bg-black text-white">
-      {currentUser.role === 'ADMIN' && <ProductionDiagnosticsPanel token={authToken} />}
       <div className="flex-1 relative">
         <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
         <Canvas camera={{ position: [0, 1, 6], fov: 50 }}>
