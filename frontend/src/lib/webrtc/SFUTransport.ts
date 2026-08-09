@@ -32,16 +32,17 @@ export class SFUTransport {
   async connect(roomId: string, userId: string) {
     const API_URL = 'https://3dvc-ai-production.up.railway.app';
     
-    // Cek beberapa kemungkinan key token di localStorage agar tidak null
-    const tokenStr = localStorage.getItem('token') || 
+    // Ambil token secara aman dari localStorage
+    const rawToken = localStorage.getItem('token') || 
                      localStorage.getItem('access_token') || 
                      localStorage.getItem('authToken') || '';
 
-    const res = await fetch(`${API_URL}/api/sfu/token?room=${roomId}`, {
-      headers: { 
-        'Authorization': `Bearer ${tokenStr}` 
-      }
-    });
+    const headers: Record<string, string> = {};
+    if (rawToken && rawToken !== 'null' && rawToken !== 'undefined') {
+      headers['Authorization'] = `Bearer ${rawToken}`;
+    }
+
+    const res = await fetch(`${API_URL}/api/sfu/token?room=${roomId}`, { headers });
 
     if (!res.ok) {
       throw new Error(`Gagal mengambil token SFU: Status ${res.status}`);
