@@ -19,7 +19,7 @@ class LoginReq(BaseModel):
 
 @router.post("/login")
 @limiter.limit("5/minute")
-async def login(req: Request, response: Response, credentials: LoginReq, db: AsyncSession = Depends(get_db)):
+async def login(request: Request, response: Response, credentials: LoginReq, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(models.User).filter_by(email=credentials.email))
     user = result.scalars().first()
     
