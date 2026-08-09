@@ -22,53 +22,69 @@ export default function Room() {
   const trackingWorker = useRef<Worker | null>(null);
   const sequenceNumber = useRef(0);
 
+  // Dapatkan ID pengguna yang aman dari objek currentUser
+  const userId = currentUser?.id || currentUser?.email || 'guest_user';
+
   useEffect(() => {
-    if (!authToken) return;
+    if (!authToken || !currentUser) return;
     
     const init = async () => {
-      // Setup WebRTC
-      transport.current = new SFUTransport();
-      await transport.current.connect('demo-room', currentUser.id);
-      
-      transport.current.onRemoteTrackingData = (id, data) => {
-        const avatar = avatarRefs.current.get(id);
-        if (avatar) avatar.updateTracking(data);
-      };
-      transport.current.onParticipantJoined = (id) => {
-        setParticipants(prev => new Map(prev).set(id, { id, isActive: false }));
-      };
-
-      // Setup Active Speaker
-      activeSpeakerManager.current = new ActiveSpeakerManager(setActiveSpeakerId);
-
-      // Setup Tracking Worker
-      if (typeof Worker !== 'undefined') {
-        trackingWorker.current = new Worker(new URL('../workers/TrackingWorker.ts', import.meta.url));
-        trackingWorker.current.onmessage = (e) => {
-          if (e.data.type === 'ready') {
-            trackingScheduler.current = new TrackingScheduler(async () => {
-              if (!localVideoRef.current || !trackingWorker.current) return;
-              const canvas = document.createElement('canvas');
-              canvas.width = 256; canvas.height = 256;
-              const ctx = canvas.getContext('2d')!;
-              ctx.drawImage(localVideoRef.current, 0, 0, 256, 256);
-              const imageData = ctx.getImageData(0, 0, 256, 256);
-              trackingWorker.current.postMessage({ type: 'process', payload: { imageData, sequence: sequenceNumber.current++, timestamp: Date.now() } }, [imageData.data.buffer]);
-            });
-            trackingScheduler.current.start();
-          } else if (e.data.type === 'result' && e.data.payload) {
-            const localAvatar = avatarRefs.current.get(transport.current?.localId || 'local');
-            localAvatar?.updateTracking(e.data.payload);
-            transport.current?.sendData(e.data.payload);
-          }
+      try {
+        // Setup WebRTC dengan ID yang aman
+        transport.current = new SFUTransport();
+        await transport.current.connect('demo-room', userId);
+        
+        transport.current.onRemoteTrackingData = (id, data) => {
+          const avatar = avatarRefs.current.get(id);
+          if (avatar) avatar.updateTracking(data);
         };
-        trackingWorker.current.postMessage({ type: 'init' });
-      }
+        transport.current.onParticipantJoined = (id) => {
+          setParticipants(prev => new Map(prev).set(id, { id, isActive: false }));
+        };
 
-      // Get local media
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+        // Setup Active Speaker
+        activeSpeakerManager.current = new ActiveSpeakerManager(setActiveSpeakerId);
+
+        // Setup Tracking Worker dengan penanganan error yang aman
+        if (typeof Worker !== 'undefined') {
+          try {
+            trackingWorker.current = new Worker(new URL('../workers/TrackingWorker.ts', import.meta.url));
+            trackingWorker.current.onmessage = (e) => {
+              if (e.data.type === 'ready') {
+                trackingScheduler.current = new TrackingScheduler(async () => {
+                  if (!localVideoRef.current || !trackingWorker.current) return;
+                  const canvas = document.createElement('canvas');
+                  canvas.width = 256; canvas.height = 256;
+                  const ctx = canvas.getContext('2d')!;
+                  ctx.drawImage(localVideoRef.current, 0, 0, 256, 256);
+                  const imageData = ctx.getImageData(0, 0, 256, 256);
+                  trackingWorker.current.postMessage({ type: 'process', payload: { imageData, sequence: sequenceNumber.current++, timestamp: Date.now() } }, [imageData.data.buffer]);
+                });
+                trackingScheduler.current.start();
+              } else if (e.data.type === 'result' && e.data.payload) {
+                const localAvatar = avatarRefs.current.get(transport.current?.localId || userId);
+                localAvatar?.updateTracking(e.data.payload);
+                transport.current?.sendData(e.data.payload);
+              }
+            };
+            trackingWorker.current.postMessage({ type: 'init' });
+          } catch (workerErr) {
+            console.warn('Tracking worker skipped or failed to load:', workerErr);
+          }
+        }
+
+        // Get local media (Kamera & Mikrofon)
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+        } catch (mediaErr) {
+          console.warn('Media devices not fully accessible:', mediaErr);
+        }
+      } catch (err) {
+        console.error('Room initialization error:', err);
+      }
     };
+
     init();
 
     return () => {
@@ -76,15 +92,17 @@ export default function Room() {
       trackingScheduler.current?.stop();
       trackingWorker.current?.terminate();
     };
-  }, [authToken]);
+  }, [authToken, currentUser, userId]);
 
   useEffect(() => {
     // Adaptive FPS based on active speaker
-    const isActive = activeSpeakerId === currentUser?.id;
+    const isActive = activeSpeakerId === userId;
     trackingScheduler.current?.setActive(isActive);
-  }, [activeSpeakerId, currentUser]);
+  }, [activeSpeakerId, userId]);
 
-  if (!authToken || !currentUser) return <LoginScreen onLogin={(token, user) => { setAuthToken(token); setCurrentUser(user); }} />;
+  if (!authToken || !currentUser) {
+    return <LoginScreen onLogin={(token, user) => { setAuthToken(token); setCurrentUser(user); }} />;
+  }
 
   return (
     <div className="flex flex-col h-screen bg-black text-white">
@@ -94,9 +112,20 @@ export default function Room() {
         <Canvas camera={{ position: [0, 1, 6], fov: 50 }}>
           <ambientLight intensity={0.8} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
-          <Avatar3D ref={(node) => { if (node) avatarRefs.current.set(currentUser.id, node); }} isActiveSpeaker={true} position={[0, 0, 0]} color="blue" />
+          <Avatar3D 
+            ref={(node) => { if (node) avatarRefs.current.set(userId, node); }} 
+            isActiveSpeaker={true} 
+            position={[0, 0, 0]} 
+            color="blue" 
+          />
           {Array.from(participants.values()).map((p) => (
-            <Avatar3D key={p.id} ref={(node) => { if (node) avatarRefs.current.set(p.id, node); else avatarRefs.current.delete(p.id); }} isActiveSpeaker={p.id === activeSpeakerId} position={[2, 0, 0]} color="red" />
+            <Avatar3D 
+              key={p.id} 
+              ref={(node) => { if (node) avatarRefs.current.set(p.id, node); else avatarRefs.current.delete(p.id); }} 
+              isActiveSpeaker={p.id === activeSpeakerId} 
+              position={[2, 0, 0]} 
+              color="red" 
+            />
           ))}
           <OrbitControls />
         </Canvas>
