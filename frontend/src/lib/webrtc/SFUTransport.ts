@@ -30,8 +30,9 @@ export class SFUTransport {
   }
 
   async connect(roomId: string, userId: string) {
-    const res = await fetch(`http://localhost:8000/api/sfu/token?room=${roomId}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } // Simplified for script
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://3dvc-ai-production.up.railway.app';
+    const res = await fetch(`${API_URL}/api/sfu/token?room=${roomId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     const { token, url } = await res.json();
     await this.room.connect(url, token);
