@@ -7,7 +7,8 @@ export default function LoginScreen({ onLogin }: { onLogin: (token: string, user
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    const res = await fetch('http://localhost:8000/api/auth/login', {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://3dvc-ai-production.up.railway.app';
+    const res = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
       body: JSON.stringify({ email, password })
     });
