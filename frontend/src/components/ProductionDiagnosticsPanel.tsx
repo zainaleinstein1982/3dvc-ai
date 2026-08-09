@@ -1,19 +1,27 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-export default function ProductionDiagnosticsPanel({ token }: { token: string }) {
+export default function ProductionDiagnosticsPanel({ token }: { token?: string }) {
   const [health, setHealth] = useState<any>(null);
 
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://3dvc-ai-production.up.railway.app';
-        const res = await fetch(`${API_URL}/api/health/admin-diagnostics`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) setHealth(await res.json());
-        else setHealth({ status: 'unauthorized' });
-      } catch (e) { setHealth({ status: 'backend_offline' }); }
+        const API_URL = 'https://3dvc-ai-production.up.railway.app';
+        const headers: HeadersInit = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(`${API_URL}/api/health/admin-diagnostics`, { headers });
+        if (res.ok) {
+          setHealth(await res.json());
+        } else {
+          setHealth({ status: 'online_restricted' });
+        }
+      } catch (e) {
+        setHealth({ status: 'backend_offline' });
+      }
     }, 2000);
     return () => clearInterval(interval);
   }, [token]);
